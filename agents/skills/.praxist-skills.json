@@ -1,0 +1,56 @@
+{
+  "managed_by": "praxist",
+  "schema_version": 1,
+  "skills": {
+    "praxist-control": {
+      "managed_by": "praxist",
+      "mode": "copy",
+      "source": "/home/ng/.local/share/praxist/venv/lib/python3.12/site-packages/praxist/resources/skills/praxist-control"
+    },
+    "praxist-diagnostic": {
+      "managed_by": "praxist",
+      "mode": "copy",
+      "source": "/home/ng/.local/share/praxist/venv/lib/python3.12/site-packages/praxist/resources/skills/praxist-diagnostic"
+    },
+    "praxist-interactive-task-init": {
+      "managed_by": "praxist",
+      "mode": "copy",
+      "source": "/home/ng/.local/share/praxist/venv/lib/python3.12/site-packages/praxist/resources/skills/praxist-interactive-task-init"
+    },
+    "praxist-onboarding": {
+      "managed_by": "praxist",
+      "mode": "copy",
+      "source": "/home/ng/.local/share/praxist/venv/lib/python3.12/site-packages/praxist/resources/skills/praxist-onboarding"
+    },
+    "praxist-runtime-install": {
+      "managed_by": "praxist",
+      "mode": "copy",
+      "source": "/home/ng/.local/share/praxist/venv/lib/python3.12/site-packages/praxist/resources/skills/praxist-runtime-install"
+    },
+    "praxist-scientific-research": {
+      "managed_by": "praxist",
+      "mode": "copy",
+      "source": "/home/ng/.local/share/praxist/venv/lib/python3.12/site-packages/praxist/resources/skills/praxist-scientific-research"
+    },
+    "praxist-takeover": {
+      "managed_by": "praxist",
+      "mode": "copy",
+      "source": "/home/ng/.local/share/praxist/venv/lib/python3.12/site-packages/praxist/resources/skills/praxist-takeover"
+    },
+    "praxist-takeover-codex": {
+      "managed_by": "praxist",
+      "mode": "copy",
+      "source": "/home/ng/.local/share/praxist/venv/lib/python3.12/site-packages/praxist/resources/skills/praxist-takeover-codex"
+    },
+    "praxist-task-initialization": {
+      "managed_by": "praxist",
+      "mode": "copy",
+      "source": "/home/ng/.local/share/praxist/venv/lib/python3.12/site-packages/praxist/resources/skills/praxist-task-initialization"
+    },
+    "terminal-line-plot": {
+      "managed_by": "praxist",
+      "mode": "copy",
+      "source": "/home/ng/.local/share/praxist/venv/lib/python3.12/site-packages/praxist/resources/skills/terminal-line-plot"
+    }
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "managed_by": "praxist",
+  "package": "praxist",
+  "skill_name": "praxist-runtime-install",
+  "source": "package-resource",
+  "tree_digest": "fc49b3d340b059b7784957f04cc7f1ee5518701af8355fb3db5aa8557d92a1fb",
+  "version": "0.5.0"
+}

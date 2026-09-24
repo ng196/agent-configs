@@ -1,0 +1,7 @@
+{
+  "dependencies": {
+    "@opencode-ai/plugin": "1.17.11",
+    "@dietrichgebert/ponytail": "^4.9.0",
+    "superpowers": "github:obra/superpowers"
+  }
+}

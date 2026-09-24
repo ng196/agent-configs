@@ -1,0 +1,51 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "old-saksham-mcp": {
+      "type": "remote",
+      "url": "https://mcp.supabase.com/mcp?project_ref=sfawfryixbwdzailncsv&features=docs%2Caccount%2Cdatabase%2Cdebugging%2Cdevelopment%2Cfunctions%2Cbranching",
+      "enabled": true
+    },
+    "new-saksham-mcp": {
+      "type": "remote",
+      "url": "https://mcp.supabase.com/mcp?project_ref=ltpjyahtjtyzoovklaxr&features=docs%2Caccount%2Cdatabase%2Cdebugging%2Cdevelopment%2Cfunctions%2Cbranching",
+      "enabled": true
+    },
+    "stitch": {
+      "type": "remote",
+      "url": "https://stitch.googleapis.com/mcp",
+      "enabled": true,
+      "oauth": false,
+      "timeout": 120000,
+      "headers": {
+        "X-Goog-Api-Key": "${STITCH_API_KEY}"
+      }
+    },
+    "kapture": {
+      "type": "local",
+      "enabled": true,
+      "command": [
+        "cmd",
+        "/c",
+        "npx",
+        "-y",
+        "kapture-mcp@latest",
+        "bridge"
+      ]
+    },
+    "open-design": {
+      "type": "local",
+      "enabled": true,
+      "command": [
+        "C:\\Users\\nitin\\AppData\\Local\\Programs\\Open Design\\Open Design.exe",
+        "C:\\Users\\nitin\\AppData\\Local\\Programs\\Open Design\\resources\\app\\prebundled\\daemon\\daemon-cli.mjs",
+        "mcp"
+      ],
+      "env": {
+        "OD_DATA_DIR": "C:\\Users\\nitin\\AppData\\Roaming\\Open Design\\namespaces\\release-stable-win\\data",
+        "OD_SIDECAR_IPC_PATH": "\\\\.\\pipe\\open-design-release-stable-win-daemon",
+        "ELECTRON_RUN_AS_NODE": "1"
+      }
+    }
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "managed_by": "praxist",
+  "package": "praxist",
+  "skill_name": "praxist-diagnostic",
+  "source": "package-resource",
+  "tree_digest": "dd3be3c9e39631eca9e1760271dff0485a30320643fb2a7cf2fcc4be5abb343a",
+  "version": "0.5.0"
+}

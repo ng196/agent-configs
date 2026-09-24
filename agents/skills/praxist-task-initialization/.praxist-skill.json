@@ -1,0 +1,8 @@
+{
+  "managed_by": "praxist",
+  "package": "praxist",
+  "skill_name": "praxist-task-initialization",
+  "source": "package-resource",
+  "tree_digest": "0db138431f6f25fac85bbed054dcb360084d485773fe72bce79926ed9ba02092",
+  "version": "0.5.0"
+}

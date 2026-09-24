@@ -1,0 +1,9 @@
+# local install backups
+*.backup-*
+
+# secrets and machine-local overrides
+.env
+*.local.*
+
+# dependencies
+node_modules/
