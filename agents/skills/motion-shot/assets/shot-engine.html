@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Motion shot — engine starter</title>
+<!--
+  STARTER. Everything is a pure function of t: scrub, step and still-freeze
+  are exact. Replace the demo content (rows, captions, output line) with one
+  true example from the real subject, and keep the mechanics:
+  camera tracks -> morph -> count -> payoff -> hold.
+  Read references/engine.md when extending this.
+-->
+<style>
+  :root{
+    --paper:#F2F4F7; --card:#FFFFFF; --ink:#101828; --muted:#667085; --faint:#98A2B3;
+    --line:#E4E7EC; --accent:#FF9900; --green:#12B76A; --greenInk:#027A48;
+    --sans:system-ui,'Segoe UI',Roboto,sans-serif; --mono:'Cascadia Mono',Consolas,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#05060A;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:14px;padding:16px 16px 92px}
+  #stage{position:relative;width:1200px;height:675px;background:var(--paper);border-radius:14px;overflow:hidden;user-select:none;box-shadow:0 30px 90px rgba(0,0,0,.75)}
+  #bg{position:absolute;inset:-60px;background:radial-gradient(80% 62% at 50% 40%,#FCFDFE 0%,#EDF0F4 58%,#E4E8EE 100%);will-change:transform}
+  #cam{position:absolute;inset:0;transform-origin:50% 50%;will-change:transform}
+
+  .row{position:absolute;left:390px;width:420px;height:64px;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 8px 22px rgba(16,24,40,.07);will-change:transform,opacity}
+  #rowA{top:210px} #rowB{top:290px}
+  .nm{position:absolute;left:16px;top:14px;font:800 16px var(--sans);letter-spacing:-.01em;color:var(--ink)}
+  .ad{position:absolute;left:16px;top:38px;font:500 12px var(--sans);color:var(--muted)}
+  .tag{position:absolute;right:14px;top:14px;font:700 10px var(--mono);letter-spacing:.1em;color:var(--faint)}
+
+  #count{position:absolute;left:0;right:0;top:150px;text-align:center;font:800 44px var(--mono);color:var(--ink);font-variant-numeric:tabular-nums;transition:none}
+  #count.hot{color:var(--greenInk)}
+
+  #out{position:absolute;left:390px;top:470px;width:420px;height:52px;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 10px 26px rgba(16,24,40,.08);display:flex;align-items:center;padding:0 16px;gap:10px;opacity:0;will-change:transform,opacity}
+  #outDot{width:18px;height:18px;border-radius:50%;background:var(--green);flex:0 0 auto}
+  #outText{font:700 13px var(--mono);color:var(--ink)}
+  #outFile{margin-left:auto;font:700 10px var(--mono);color:var(--greenInk);background:rgba(18,183,106,.12);border-radius:6px;padding:4px 8px;opacity:0}
+
+  .cap{position:absolute;left:0;right:0;top:552px;text-align:center;font:800 30px var(--sans);letter-spacing:-.025em;color:var(--ink);pointer-events:none}
+  .cap .w{display:inline-block;white-space:pre}
+
+  .deck{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.06);backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,.12);border-radius:13px;padding:9px 14px;z-index:30}
+  .btn{font:700 12px var(--sans);color:#F4F7FB;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:8px;padding:8px 12px;cursor:pointer}
+  .btn:hover{background:rgba(255,255,255,.18)}
+  .btn.go{background:var(--accent);border-color:var(--accent);color:#0B0D12}
+  #scrub{width:340px;accent-color:var(--accent)}
+  .ro{font:600 11px var(--mono);color:#98A2B3;font-variant-numeric:tabular-nums}
+  .ro b{color:#F4F7FB}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="bg"></div>
+  <div id="cam">
+    <div class="row" id="rowA"><div class="nm">Northwind Supply Co.</div><div class="ad">14 Harbor Road, Portland, OR</div><div class="tag">A</div></div>
+    <div class="row" id="rowB"><div class="nm">Northwind Supply Company</div><div class="ad">14 Harbor Road, Portland, OR</div><div class="tag">B</div></div>
+    <div id="count">2</div>
+    <div id="out"><span id="outDot"></span><span id="outText">A-1042 → B-7781</span><span id="outFile">results.tsv</span></div>
+    <div id="caps"></div>
+  </div>
+</div>
+
+<div class="deck">
+  <button class="btn go" id="play" title="Space">▶ Play</button>
+  <button class="btn" id="replay" title="R">⟲</button>
+  <input id="scrub" type="range" min="0" max="1000" value="0">
+  <span class="ro"><b id="rt">0.0</b>s / 7.0s</span>
+</div>
+
+<script>
+"use strict";
+/* Demo: two records of the same shop merge into one, count 2 -> 1,
+   the merged record is written out. Replace content, keep the mechanics. */
+const $=s=>document.querySelector(s);
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const lerp=(a,b,t)=>a+(b-a)*t;
+const ease=t=>1-Math.pow(1-t,3);
+const easeIO=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
+const p=(a,b,t)=>ease(clamp((t-a)/b,0,1));
+const track=(t,pts)=>{if(t<=pts[0][0])return pts[0][1];
+  for(let i=1;i<pts.length;i++)if(t<=pts[i][0])return lerp(pts[i-1][1],pts[i][1],(t-pts[i-1][0])/(pts[i][0]-pts[i-1][0]));
+  return pts[pts.length-1][1];};
+const TOTAL=7000;
+
+/* sound: one cue per visible state change */
+const A={ctx:null,armed:false,nodes:[],
+  arm(){if(!this.ctx){try{this.ctx=new(window.AudioContext||window.webkitAudioContext)();}catch(e){return;}}this.armed=true;if(this.ctx.state==='suspended')this.ctx.resume();},
+  noise(){const n=this.ctx.sampleRate*.35,b=this.ctx.createBuffer(1,n,this.ctx.sampleRate),d=b.getChannelData(0);for(let i=0;i<n;i++)d[i]=Math.random()*2-1;return b;},
+  tone(f1,f2,dur,peak,at,type){if(!this.armed)return;const c=this.ctx,t0=c.currentTime+Math.max(0,at);
+    const o=c.createOscillator(),g=c.createGain();o.type=type||'sine';
+    o.frequency.setValueAtTime(f1,t0);if(f2!==f1)o.frequency.exponentialRampToValueAtTime(f2,t0+dur*.85);
+    g.gain.setValueAtTime(.0001,t0);g.gain.exponentialRampToValueAtTime(peak,t0+.008);g.gain.exponentialRampToValueAtTime(.0001,t0+dur);
+    o.connect(g);g.connect(c.destination);o.start(t0);o.stop(t0+dur+.03);this.nodes.push(o);},
+  hiss(fc,peak,dur,at){if(!this.armed)return;const c=this.ctx,t0=c.currentTime+Math.max(0,at);
+    const s=c.createBufferSource();s.buffer=this.noise();const f=c.createBiquadFilter();f.type='highpass';f.frequency.value=fc;
+    const g=c.createGain();g.gain.setValueAtTime(.0001,t0);g.gain.exponentialRampToValueAtTime(peak,t0+.005);g.gain.exponentialRampToValueAtTime(.0001,t0+dur);
+    s.connect(f);f.connect(g);g.connect(c.destination);s.start(t0);s.stop(t0+dur+.03);this.nodes.push(s);},
+  sweep(f1,f2,peak,dur,at){if(!this.armed)return;const c=this.ctx,t0=c.currentTime+Math.max(0,at);
+    const s=c.createBufferSource();s.buffer=this.noise();const f=c.createBiquadFilter();f.type='bandpass';f.Q.value=1.1;
+    f.frequency.setValueAtTime(f1,t0);f.frequency.exponentialRampToValueAtTime(f2,t0+dur*.9);
+    const g=c.createGain();g.gain.setValueAtTime(.0001,t0);g.gain.exponentialRampToValueAtTime(peak,t0+.05);g.gain.exponentialRampToValueAtTime(.0001,t0+dur);
+    s.connect(f);f.connect(g);g.connect(c.destination);s.start(t0);s.stop(t0+dur+.03);this.nodes.push(s);},
+  cue(k,at){
+    if(k==='row')this.tone(300,205,.1,.14,at);
+    else if(k==='tick')this.tone(340,260,.09,.1,at);
+    else if(k==='whoosh')this.sweep(420,2200,.15,.3,at);
+    else if(k==='dock')this.tone(170,84,.14,.32,at);
+    else if(k==='bass')this.tone(72,42,.42,.4,at);
+    else if(k==='confirm'){this.tone(880,880,.1,.11,at);this.tone(1318,1318,.13,.09,at+.09);}
+    else if(k==='write')this.hiss(5200,.06,.03,at);
+  },
+  stopAll(){this.nodes.forEach(n=>{try{n.stop();}catch(e){}});this.nodes=[];}
+};
+const CUES=[[2450,'whoosh'],[2870,'dock'],[2930,'bass'],[3100,'confirm'],[3550,'write']];
+
+/* caption word slots */
+function words(el,text){el.innerHTML='';return text.split(' ').map(w=>{const s=document.createElement('span');s.className='w';s.textContent=w;el.appendChild(s);el.appendChild(document.createTextNode(' '));return s;});}
+function cap(text,tIn,tOut){const d=document.createElement('div');d.className='cap';$('#cam').appendChild(d);return {w:words(d,text),tIn:tIn,tOut:tOut};}
+const CAPS=[cap('Two rows.',2150,3300),cap('One entity.',3450,1e9)];
+
+function render(t){
+  /* camera: push in, pull for the morph, chase the payoff */
+  const cs=track(t,[[0,1],[1800,1.05],[2500,.98],[3600,1.05],[5200,1.08]]);
+  const cy=track(t,[[0,0],[1800,-8],[2500,10],[3600,-4],[5200,-10]]);
+  $('#cam').style.transform='translateY('+cy+'px) scale('+cs+')';
+  $('#bg').style.transform='translateY('+(cy*.4)+'px) scale('+(1+(cs-1)*.5)+')';
+
+  /* rows land, then B is absorbed into A */
+  const ia=ease(clamp((t-1450)/400,0,1)),ib=ease(clamp((t-1650)/400,0,1));
+  const mg=easeIO(p(2450,420,t));
+  $('#rowA').style.opacity=String(ia);
+  $('#rowA').style.transform='translateY('+((1-ia)*14)+'px) scale('+(1+Math.sin(Math.PI*p(2870,450,t))*.02)+')';
+  /* fade starts mid-travel: the dock still must already read as absorbed */
+  $('#rowB').style.opacity=String(ib*(1-clamp((t-2580)/280,0,1)));
+  $('#rowB').style.transform='translateY('+((1-ib)*14-mg*68)+'px) scale('+(1-mg*.04)+')';
+
+  /* count is the story */
+  const cc=$('#count');
+  cc.textContent=t<3050?'2':'1';
+  cc.classList.toggle('hot',Math.abs(t-3050)<300);
+  cc.style.opacity=String(clamp((t-1300)/400,0,1));
+
+  /* the merged record is written out */
+  const ow=ease(p(3300,450,t));
+  $('#out').style.opacity=String(clamp((t-3500)/300,0,1));
+  $('#out').style.transform='translateY('+((1-ow)*-120)+'px)';
+  $('#outFile').style.opacity=String(clamp((t-3900)/300,0,1));
+
+  /* captions */
+  CAPS.forEach(C=>C.w.forEach((s,i)=>{
+    const pi=clamp((t-C.tIn-i*80)/380,0,1),po=clamp((t-C.tOut-i*40)/280,0,1);
+    s.style.opacity=pi*(1-po);
+    s.style.transform='translateY('+((1-pi)*16-po*18)+'px)';
+  }));
+}
+
+/* clock */
+let t=0,playing=false,last=0,raf=0,prevT=0;
+function draw(){render(t);$('#rt').textContent=(t/1000).toFixed(1);$('#scrub').value=String(Math.round(t/TOTAL*1000));}
+function seek(v){t=clamp(v,0,TOTAL);draw();}
+function loop(ts){if(!playing)return;const dt=ts-last;last=ts;prevT=t;t+=dt;
+  CUES.forEach(c=>{if(prevT<c[0]&&t>=c[0])A.cue(c[1],0);});
+  if(t>=TOTAL){t=TOTAL;draw();playing=false;$('#play').textContent='▶ Play';A.stopAll();return;}
+  draw();raf=requestAnimationFrame(loop);}
+function play(){if(t>=TOTAL)t=0;A.arm();CUES.forEach(c=>{if(c[0]>=t)A.cue(c[1],(c[0]-t)/1000);});playing=true;$('#play').textContent='❚❚ Pause';last=performance.now();cancelAnimationFrame(raf);raf=requestAnimationFrame(loop);}
+function pause(){playing=false;$('#play').textContent='▶ Play';cancelAnimationFrame(raf);A.stopAll();}
+$('#play').onclick=()=>{A.arm();playing?pause():play();};
+$('#replay').onclick=()=>{pause();seek(0);play();};
+$('#scrub').oninput=e=>{pause();seek(+e.target.value/1000*TOTAL);};
+addEventListener('keydown',e=>{
+  if(e.code==='Space'){e.preventDefault();A.arm();playing?pause():play();}
+  else if(e.key==='r'||e.key==='R'){pause();seek(0);play();}
+});
+addEventListener('pointerdown',()=>A.arm(),{once:true});
+/* ?t=2.9 freezes that frame for review; ?t=2.9&auto=1 also plays */
+const q=new URLSearchParams(location.search);
+if(q.get('t')!=null){seek(parseFloat(q.get('t'))*1000);if(q.get('auto'))setTimeout(play,300);}
+else{seek(0);setTimeout(play,700);}
+</script>
+</body>
+</html>
